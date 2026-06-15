@@ -1,5 +1,11 @@
-import { useMemo, useState } from "react";
-import { advanceReport, useReports } from "../lib/store";
+import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
+import {
+  advanceReport,
+  committeeKey,
+  committeeLogin,
+  committeeLogout,
+  useReports,
+} from "../lib/store";
 import {
   CATEGORY_MAP,
   STATUS_FLOW,
@@ -7,6 +13,10 @@ import {
 } from "../lib/constants";
 import type { Report, ReportStatus } from "../lib/types";
 import { IconEyeOff, IconGrid } from "../components/icons";
+import { Stat } from "../components/Stat";
+
+// Estadísticas (recharts) en un chunk aparte: solo se descarga al abrir la pestaña.
+const StatsView = lazy(() => import("./CommitteeStats"));
 
 const FILTERS: { id: ReportStatus | "todos"; label: string }[] = [
   { id: "todos", label: "Todos" },
@@ -16,8 +26,83 @@ const FILTERS: { id: ReportStatus | "todos"; label: string }[] = [
   { id: "atendido", label: "Atendidos" },
 ];
 
+type Tab = "casos" | "estadisticas";
+
 export default function Committee() {
-  const reports = useReports();
+  const [authed, setAuthed] = useState(() => committeeKey() != null);
+  // Si la clave deja de ser válida (401), vuelve a pedir acceso.
+  const reports = useReports(() => {
+    committeeLogout();
+    setAuthed(false);
+  });
+  const [tab, setTab] = useState<Tab>("casos");
+
+  if (!authed) return <CommitteeGate onAuthed={() => setAuthed(true)} />;
+
+  return (
+    <div className="mx-auto max-w-6xl px-5 py-12">
+      <div className="flex items-start gap-3">
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-pine-50">
+          <IconGrid className="text-pine-600" />
+        </span>
+        <div className="flex-1">
+          <span className="eyebrow">Panel del comité de ética</span>
+          <h1 className="mt-1 text-4xl">Clasificación y seguimiento</h1>
+        </div>
+        <button
+          onClick={() => {
+            committeeLogout();
+            setAuthed(false);
+          }}
+          className="btn btn-ghost px-3 py-1.5 text-sm"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+      <p className="mt-3 max-w-2xl text-ink-soft">
+        Espacio reservado al comité para clasificar, derivar y dejar constancia
+        de la atención. El objetivo es responsabilidad y trazabilidad, no
+        sanción. La identidad de quien reporta de forma anónima nunca se revela.
+      </p>
+
+      {/* Pestañas */}
+      <div className="mt-8 flex gap-2 border-b border-line">
+        {([
+          { id: "casos", label: "Casos" },
+          { id: "estadisticas", label: "Estadísticas" },
+        ] as { id: Tab; label: string }[]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              tab === t.id
+                ? "border-pine-700 text-pine-700"
+                : "border-transparent text-ink-soft hover:text-ink"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "casos" ? (
+        <CasesView reports={reports} />
+      ) : (
+        <Suspense
+          fallback={
+            <div className="card mt-8 px-6 py-16 text-center text-ink-soft">
+              Cargando estadísticas…
+            </div>
+          }
+        >
+          <StatsView reports={reports} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+function CasesView({ reports }: { reports: Report[] }) {
   const [filter, setFilter] = useState<ReportStatus | "todos">("todos");
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -38,22 +123,7 @@ export default function Committee() {
   const active = reports.find((r) => r.code === selected) ?? null;
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12">
-      <div className="flex items-start gap-3">
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-pine-50">
-          <IconGrid className="text-pine-600" />
-        </span>
-        <div>
-          <span className="eyebrow">Panel del comité de ética</span>
-          <h1 className="mt-1 text-4xl">Clasificación y seguimiento</h1>
-        </div>
-      </div>
-      <p className="mt-3 max-w-2xl text-ink-soft">
-        Espacio reservado al comité para clasificar, derivar y dejar constancia
-        de la atención. El objetivo es responsabilidad y trazabilidad, no
-        sanción. La identidad de quien reporta de forma anónima nunca se revela.
-      </p>
-
+    <>
       {/* Métricas */}
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Reportes" value={counts.todos} tone="ink" />
@@ -99,32 +169,7 @@ export default function Committee() {
       {active && (
         <CaseDrawer report={active} onClose={() => setSelected(null)} />
       )}
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "ink" | "pine" | "amber";
-}) {
-  const ring =
-    tone === "amber"
-      ? "text-clay"
-      : tone === "pine"
-        ? "text-pine-600"
-        : "text-ink";
-  return (
-    <div className="card p-4">
-      <p className={`font-display text-3xl font-semibold ${ring}`}>{value}</p>
-      <p className="mt-0.5 font-mono text-xs uppercase tracking-[0.12em] text-ink-soft">
-        {label}
-      </p>
-    </div>
+    </>
   );
 }
 
@@ -308,6 +353,65 @@ function CaseDrawer({
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CommitteeGate({ onAuthed }: { onAuthed: () => void }) {
+  const [key, setKey] = useState("");
+  const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!key.trim()) return;
+    setChecking(true);
+    setError(false);
+    try {
+      if (await committeeLogin(key)) onAuthed();
+      else setError(true);
+    } catch {
+      setError(true);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-md px-5 py-20">
+      <div className="card p-8">
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-pine-50">
+          <IconEyeOff className="text-pine-600" />
+        </span>
+        <h1 className="mt-4 text-3xl">Acceso del comité</h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          Este panel muestra información confidencial de los reportes. Introduce
+          la clave del comité de ética para continuar.
+        </p>
+        <form onSubmit={submit} className="mt-6 space-y-3">
+          <input
+            type="password"
+            className="field w-full"
+            placeholder="Clave del comité"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            autoFocus
+            autoComplete="current-password"
+          />
+          {error && (
+            <p className="text-sm font-medium text-clay">
+              Clave incorrecta. Inténtalo de nuevo.
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={checking}
+            className="btn btn-primary w-full"
+          >
+            {checking ? "Verificando…" : "Entrar"}
+          </button>
+        </form>
       </div>
     </div>
   );

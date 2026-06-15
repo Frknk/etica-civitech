@@ -10,3 +10,10 @@ dist
 
 # Artefactos de build de TypeScript
 *.tsbuildinfo
+
+# Estado local de Wrangler/Miniflare (D1 local, caché)
+.wrangler
+
+# Secretos de desarrollo local (no se versionan)
+.dev.vars
+.dev.vars.*

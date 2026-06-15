@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   CategoryId,
   LearnProgress,
@@ -16,16 +16,55 @@ import type {
 
 const API = "/api";
 
+/** Error de autorización del comité (clave ausente o inválida → HTTP 401). */
+export class UnauthorizedError extends Error {}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
   });
+  if (res.status === 401) throw new UnauthorizedError("Acceso restringido.");
   if (!res.ok && res.status !== 404) {
     const detail = await res.json().catch(() => null);
     throw new Error(detail?.error ?? `Error ${res.status}`);
   }
   return res.json() as Promise<T>;
+}
+
+/* ----------------------- Acceso del comité ----------------------- */
+/* La clave del comité se guarda en sessionStorage (se borra al cerrar la
+ * pestaña). Se envía como Bearer en las llamadas que exponen datos
+ * confidenciales. El reportante no usa esto: su llave es el código. */
+
+const COMMITTEE_KEY = "civictech.committee.key.v1";
+
+export function committeeKey(): string | null {
+  return sessionStorage.getItem(COMMITTEE_KEY);
+}
+
+function authHeaders(): Record<string, string> {
+  const key = committeeKey();
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
+
+/** Verifica la clave contra el API; si es válida, la guarda para la sesión. */
+export async function committeeLogin(key: string): Promise<boolean> {
+  const res = await fetch(`${API}/committee/login`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}` },
+  });
+  if (res.ok) {
+    sessionStorage.setItem(COMMITTEE_KEY, key);
+    emit();
+    return true;
+  }
+  return false;
+}
+
+export function committeeLogout(): void {
+  sessionStorage.removeItem(COMMITTEE_KEY);
+  emit();
 }
 
 /* ----- Notificación de cambios para refrescar los hooks ----- */
@@ -44,7 +83,7 @@ function subscribe(l: () => void) {
 /* --------------------------- Reportes --------------------------- */
 
 export function getReports(): Promise<Report[]> {
-  return request<Report[]>("/reports");
+  return request<Report[]>("/reports", { headers: authHeaders() });
 }
 
 export async function getReportByCode(
@@ -83,6 +122,7 @@ export async function advanceReport(
 ): Promise<void> {
   await request<Report>(`/reports/${encodeURIComponent(code)}/advance`, {
     method: "POST",
+    headers: authHeaders(),
     body: JSON.stringify({ status, message }),
   });
   emit();
@@ -127,14 +167,25 @@ export async function resetProgress(): Promise<void> {
 /* ------------------------- React hooks -------------------------- */
 /* Cargan de la API y se vuelven a cargar cuando una mutación emite cambios. */
 
-export function useReports(): Report[] {
+/**
+ * Carga los reportes del comité (requiere clave). Si el API responde 401
+ * (clave ausente o revocada) invoca `onUnauthorized` para que el panel
+ * vuelva a pedir acceso. Solo consulta cuando hay clave en la sesión.
+ */
+export function useReports(onUnauthorized?: () => void): Report[] {
   const [reports, setReports] = useState<Report[]>([]);
+  const onUnauth = useRef(onUnauthorized);
+  onUnauth.current = onUnauthorized;
   useEffect(() => {
     let alive = true;
-    const load = () =>
+    const load = () => {
+      if (!committeeKey()) return;
       getReports()
         .then((r) => alive && setReports(r))
-        .catch(() => {});
+        .catch((e) => {
+          if (e instanceof UnauthorizedError) onUnauth.current?.();
+        });
+    };
     load();
     return subscribe(load);
   }, []);

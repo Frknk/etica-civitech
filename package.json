@@ -6,25 +6,31 @@
   "description": "CivicTech - Ética Profesional: plataforma de reporte responsable y confidencial de incidentes éticos (UNAS).",
   "scripts": {
     "dev": "vite",
-    "server": "bun run --watch server/index.ts",
-    "dev:all": "bun run server & vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "build": "tsc -b && tsc -p tsconfig.worker.json --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "bun run build && wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply civictech --local",
+    "db:migrate:remote": "wrangler d1 migrations apply civictech --remote"
   },
   "dependencies": {
-    "@elysiajs/cors": "^1.4.2",
-    "elysia": "^1.4.28",
+    "@hono/zod-validator": "^0.4.3",
+    "hono": "^4.9.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.17.0"
+    "react-router-dom": "^7.17.0",
+    "recharts": "^3.8.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.6",
+    "@cloudflare/workers-types": "^4.20250906.0",
     "@tailwindcss/vite": "^4.3.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "wrangler": "^4.42.0"
   }
 }

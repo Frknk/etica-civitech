@@ -1,0 +1,27 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "civictech-etica",
+	"main": "./worker/index.ts",
+	// Fecha de hoy: habilita la optimización de navegación SPA (assets).
+	"compatibility_date": "2026-06-15",
+	"assets": {
+		// El directorio lo gestiona el plugin de Vite (build del cliente).
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application",
+		// El Worker atiende /api/* antes que los assets; el resto va al SPA.
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "civictech",
+			"database_id": "da930339-c09f-4f4b-9cfe-8df72033eb27",
+			"migrations_dir": "migrations"
+		}
+	]
+}
