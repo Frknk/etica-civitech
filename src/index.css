@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CivicTech – Ética Profesional
+   Dirección de diseño: "Cultivar la integridad"
+   Verde selva (UNAS) · crecimiento · confianza · calidez
+   ============================================================ */
+
+@theme {
+  --color-ink: #14201a;
+  --color-ink-soft: #3b4a42;
+  --color-paper: #f7f5ef;
+  --color-surface: #ffffff;
+
+  --color-pine-50: #ecf3ee;
+  --color-pine-100: #d6e6dc;
+  --color-pine-200: #a9cbb6;
+  --color-pine-400: #3fa66a;
+  --color-pine-600: #1b5e43;
+  --color-pine-700: #17503a;
+  --color-pine-900: #102e22;
+
+  --color-amber: #e0a33e;
+  --color-amber-soft: #f6e6c6;
+  --color-clay: #b5532f;
+
+  --color-line: #e3e0d6;
+  --color-line-strong: #cfccc0;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-card: 18px;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--color-pine-600);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  /* Eyebrow / utility label ---------------------------------- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-pine-600);
+  }
+
+  /* Buttons -------------------------------------------------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.78rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.16s ease, background-color 0.16s ease,
+      box-shadow 0.16s ease, border-color 0.16s ease;
+    text-decoration: none;
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn-primary {
+    background-color: var(--color-pine-700);
+    color: #f3f8f4;
+    box-shadow: 0 1px 0 rgba(16, 46, 34, 0.4),
+      0 10px 22px -14px rgba(16, 46, 34, 0.7);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-pine-600);
+    box-shadow: 0 1px 0 rgba(16, 46, 34, 0.4),
+      0 14px 26px -12px rgba(16, 46, 34, 0.7);
+  }
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-pine-700);
+    border-color: var(--color-line-strong);
+  }
+  .btn-ghost:hover {
+    border-color: var(--color-pine-400);
+    background-color: var(--color-pine-50);
+  }
+
+  /* Card ----------------------------------------------------- */
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  /* Field ---------------------------------------------------- */
+  .field-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin-bottom: 0.4rem;
+    color: var(--color-ink);
+  }
+  .field {
+    width: 100%;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: 12px;
+    padding: 0.7rem 0.85rem;
+    font-family: inherit;
+    font-size: 0.97rem;
+    color: var(--color-ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-pine-600);
+    box-shadow: 0 0 0 3px var(--color-pine-100);
+  }
+  .field::placeholder {
+    color: #9aa39c;
+  }
+
+  /* Signature: confidential tracking code ------------------- */
+  .code-chip {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    background-color: var(--color-pine-900);
+    color: #eaf2ec;
+    border-radius: 12px;
+    padding: 0.55rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* Growth ladder bar --------------------------------------- */
+  .grow-track {
+    height: 10px;
+    border-radius: 999px;
+    background-color: var(--color-pine-100);
+    overflow: hidden;
+  }
+  .grow-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--color-pine-600),
+      var(--color-pine-400)
+    );
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+/* Subtle entrance for page sections */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

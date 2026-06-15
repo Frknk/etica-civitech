@@ -1,0 +1,12 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# Base de datos SQLite (datos locales, no se versionan)
+*.db
+*.db-shm
+*.db-wal
+
+# Artefactos de build de TypeScript
+*.tsbuildinfo
