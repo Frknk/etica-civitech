@@ -12,6 +12,7 @@ import {
   resetProgress,
 } from "./db";
 import { isCommittee } from "./auth";
+import { verifyTurnstile } from "./turnstile";
 import { STATUS_FLOW } from "../src/lib/constants";
 import type { ReportStatus } from "../src/lib/types";
 
@@ -19,6 +20,8 @@ export interface Env {
   DB: D1Database;
   /** Clave compartida del comité (wrangler secret put COMMITTEE_KEY). */
   COMMITTEE_KEY?: string;
+  /** Secreto del widget de Turnstile (wrangler secret put TURNSTILE_SECRET_KEY). */
+  TURNSTILE_SECRET_KEY?: string;
 }
 
 /* ----------------------------- Validación ----------------------------- */
@@ -71,6 +74,26 @@ const requireCommittee = async (c: Context<{ Bindings: Env }>, next: Next) => {
   await next();
 };
 
+/**
+ * Middleware: exige un token de Turnstile válido (anti-bots). El cliente lo
+ * envía en la cabecera X-Turnstile-Token. Se valida contra Cloudflare antes
+ * de aceptar el reporte; sin secreto configurado se deniega (fail-closed).
+ */
+const requireTurnstile = async (c: Context<{ Bindings: Env }>, next: Next) => {
+  const token = c.req.header("X-Turnstile-Token");
+  const ip = c.req.header("CF-Connecting-IP");
+  if (!(await verifyTurnstile(token, c.env.TURNSTILE_SECRET_KEY, ip))) {
+    return c.json(
+      {
+        error:
+          "No pudimos verificar que no eres un bot. Recarga la página e inténtalo de nuevo.",
+      },
+      403
+    );
+  }
+  await next();
+};
+
 /* --------------------------- Comité (auth) ---------------------------- */
 
 // Verifica la clave sin exponer datos: permite que el panel valide el acceso.
@@ -109,6 +132,7 @@ api.get("/reports/:code", async (c) => {
 
 api.post(
   "/reports",
+  requireTurnstile,
   zValidator("json", newReportSchema, (r) => (r.success ? undefined : invalid())),
   async (c) => c.json(await createReport(c.env.DB, c.req.valid("json")))
 );

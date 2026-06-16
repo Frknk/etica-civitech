@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { CATEGORIES } from "../lib/constants";
 import { createReport } from "../lib/store";
 import type { CategoryId, Report, ReportEvidence } from "../lib/types";
+import { Turnstile, type TurnstileHandle } from "../components/Turnstile";
 import {
   IconArrow,
   IconCheck,
@@ -21,6 +22,8 @@ export default function ReportPage() {
   const [evidence, setEvidence] = useState<ReportEvidence[]>([]);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Report | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   function onFiles(list: FileList | null) {
     if (!list) return;
@@ -38,22 +41,35 @@ export default function ReportPage() {
       return setError("Escribe un título de al menos 6 caracteres.");
     if (description.trim().length < 20)
       return setError("Describe el incidente con al menos 20 caracteres.");
+    if (!turnstileToken)
+      return setError("Completa la verificación anti-bots antes de enviar.");
     setError("");
     setSending(true);
     try {
-      const report = await createReport({
-        category,
-        title,
-        description,
-        context,
-        anonymous,
-        contactAlias: anonymous ? undefined : contactAlias,
-        evidence,
-      });
+      const report = await createReport(
+        {
+          category,
+          title,
+          description,
+          context,
+          anonymous,
+          contactAlias: anonymous ? undefined : contactAlias,
+          evidence,
+        },
+        turnstileToken
+      );
       setCreated(report);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      setError("No se pudo enviar el reporte. Revisa tu conexión e inténtalo de nuevo.");
+    } catch (err) {
+      // El token de Turnstile es de un solo uso: reiniciamos el widget para
+      // obtener uno nuevo antes de reintentar.
+      turnstileRef.current?.reset();
+      setTurnstileToken("");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo enviar el reporte. Revisa tu conexión e inténtalo de nuevo."
+      );
     } finally {
       setSending(false);
     }
@@ -205,6 +221,16 @@ export default function ReportPage() {
               />
             </div>
           )}
+        </div>
+
+        {/* Verificación anti-bots (Cloudflare Turnstile) */}
+        <div>
+          <Turnstile
+            ref={turnstileRef}
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+            onError={() => setTurnstileToken("")}
+          />
         </div>
 
         {error && (

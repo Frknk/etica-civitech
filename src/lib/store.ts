@@ -106,9 +106,15 @@ export interface NewReportInput {
   evidence: ReportEvidence[];
 }
 
-export async function createReport(input: NewReportInput): Promise<Report> {
+export async function createReport(
+  input: NewReportInput,
+  turnstileToken: string
+): Promise<Report> {
+  // El token de Turnstile (anti-bots) viaja en una cabecera; el Worker lo
+  // valida contra Cloudflare antes de registrar el reporte.
   const report = await request<Report>("/reports", {
     method: "POST",
+    headers: { "X-Turnstile-Token": turnstileToken },
     body: JSON.stringify(input),
   });
   emit();

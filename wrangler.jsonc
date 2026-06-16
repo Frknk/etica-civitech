@@ -4,6 +4,14 @@
 	"main": "./worker/index.ts",
 	// Fecha de hoy: habilita la optimización de navegación SPA (assets).
 	"compatibility_date": "2026-06-15",
+	// Dominio personalizado (configurado en el Dashboard). Se declara aquí para
+	// que `wrangler deploy` lo conserve en lugar de eliminarlo.
+	"routes": [
+		{
+			"pattern": "civitech.online",
+			"custom_domain": true
+		}
+	],
 	"assets": {
 		// El directorio lo gestiona el plugin de Vite (build del cliente).
 		"binding": "ASSETS",
@@ -23,5 +31,7 @@
 			"database_id": "da930339-c09f-4f4b-9cfe-8df72033eb27",
 			"migrations_dir": "migrations"
 		}
-	]
+	],
+	"workers_dev": true,
+	"preview_urls": true
 }
