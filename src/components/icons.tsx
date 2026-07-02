@@ -97,3 +97,18 @@ export const IconLock = (p: SVGProps<SVGSVGElement>) => (
     <path d="M8 11V8a4 4 0 018 0v3" />
   </svg>
 );
+
+export const IconQr = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <path d="M14 14h3v3M21 14v.01M21 21v-4M14 21h3" />
+  </svg>
+);
+
+export const IconX = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);

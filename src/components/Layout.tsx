@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Logo, Sprout } from "./Brand";
+import { IconQr } from "./icons";
+import QRDialog from "./QRDialog";
 
 const NAV = [
   { to: "/reportar", label: "Reportar" },
@@ -11,6 +13,7 @@ const NAV = [
 
 export default function Layout() {
   const [open, setOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -34,19 +37,37 @@ export default function Layout() {
                 {item.label}
               </NavLink>
             ))}
+            <button
+              type="button"
+              onClick={() => setQrOpen(true)}
+              className="btn btn-ghost ml-1 h-10 w-10 rounded-full p-0"
+              aria-label="Compartir con código QR"
+            >
+              <IconQr width={18} height={18} />
+            </button>
             <Link to="/reportar" className="btn btn-primary ml-2 py-2.5">
               Reportar incidente
             </Link>
           </nav>
 
-          <button
-            className="btn btn-ghost px-3 py-2 md:hidden"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-label="Abrir menú"
-          >
-            <span aria-hidden>{open ? "✕" : "☰"}</span>
-          </button>
+          <div className="flex items-center gap-1 md:hidden">
+            <button
+              type="button"
+              onClick={() => setQrOpen(true)}
+              className="btn btn-ghost h-10 w-10 rounded-full p-0"
+              aria-label="Compartir con código QR"
+            >
+              <IconQr width={18} height={18} />
+            </button>
+            <button
+              className="btn btn-ghost px-3 py-2"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-label="Abrir menú"
+            >
+              <span aria-hidden>{open ? "✕" : "☰"}</span>
+            </button>
+          </div>
         </div>
 
         {open && (
@@ -132,6 +153,8 @@ export default function Layout() {
           </div>
         </div>
       </footer>
+
+      <QRDialog open={qrOpen} onClose={() => setQrOpen(false)} />
     </div>
   );
 }
